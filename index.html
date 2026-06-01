@@ -636,16 +636,13 @@
 
       if (state.passing) {
         updatePass(now);
-        if (!state.passing) {
-          if (state.running) requestAnimationFrame(tick);
-          return;
-        }
         const caughtBy = getCollision();
         if (caughtBy) {
-          ball.className = "ball caught";
-          ball.style.left = `${caughtBy.x}%`;
-          ball.style.top = `${caughtBy.y}%`;
-          gameOver();
+          catchBall(caughtBy);
+          return;
+        }
+        if (getPassProgress(now) >= 1) {
+          keeperCatch();
           return;
         }
       }
@@ -657,7 +654,6 @@
       const progress = getPassProgress(now);
       const ballY = state.passFrom + (state.passTo - state.passFrom) * progress;
       ball.style.top = `${ballY}%`;
-      if (progress >= 1) clearLevel();
     }
 
     function getPassProgress(now = performance.now()) {
@@ -675,6 +671,22 @@
         const sameHeight = Math.abs(opponent.y - ballY) < 5.5;
         return sameLane && sameHeight;
       });
+    }
+
+    function catchBall(opponent) {
+      state.passing = false;
+      ball.className = "ball caught";
+      ball.style.left = `${opponent.x}%`;
+      ball.style.top = `${opponent.y}%`;
+      setTimeout(gameOver, 180);
+    }
+
+    function keeperCatch() {
+      state.passing = false;
+      ball.className = "ball caught";
+      ball.style.left = "50%";
+      ball.style.top = "88%";
+      setTimeout(clearLevel, 180);
     }
 
     passButton.addEventListener("click", pass);
