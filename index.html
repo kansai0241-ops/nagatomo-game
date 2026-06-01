@@ -556,10 +556,12 @@
       if (state.cleared) return;
       if (!state.running) {
         startGame();
+        setTimeout(pass, 120);
         return;
       }
       if (state.passing) return;
 
+      const cfg = levels[state.level - 1];
       state.passing = true;
       state.passStart = performance.now();
       state.passDuration = cfg.pass;
