@@ -233,6 +233,15 @@
       background: #d79a68;
     }
 
+    .player .head {
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.08)),
+        url("https://commons.wikimedia.org/wiki/Special:FilePath/Yuto%20Nagatomo%202009.jpg?width=220");
+      background-size: 430%;
+      background-position: 50% 8%;
+      background-repeat: no-repeat;
+    }
+
     .opponent::after {
       content: "";
       position: absolute;
@@ -331,6 +340,18 @@
       line-height: 1.35;
     }
 
+    .credit {
+      position: absolute;
+      right: 8px;
+      bottom: 4px;
+      z-index: 11;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 9px;
+      font-weight: 800;
+      text-decoration: none;
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+    }
+
     .controls {
       display: grid;
       grid-template-columns: 1fr 112px;
@@ -427,6 +448,7 @@
       <div class="keeper" aria-hidden="true"><div class="head"></div><div class="kit"></div></div>
       <div class="ball ready" id="ball" aria-hidden="true"></div>
       <div id="opponents"></div>
+      <a class="credit" href="https://commons.wikimedia.org/wiki/File:Yuto_Nagatomo_2009.jpg" target="_blank" rel="noopener">Photo: yoppy, CC BY 2.0</a>
 
       <div class="callout" id="message">
         パスを通せ
@@ -453,11 +475,11 @@
     const resetButton = document.getElementById("resetButton");
 
     const levels = [
-      { speed: 1.45, count: 1, width: 12, pass: 620 },
-      { speed: 1.9, count: 2, width: 12, pass: 590 },
-      { speed: 2.35, count: 2, width: 13, pass: 560 },
-      { speed: 2.9, count: 3, width: 13, pass: 530 },
-      { speed: 3.8, count: 3, width: 14, pass: 500 },
+      { speed: 2.15, count: 2, width: 14, pass: 640 },
+      { speed: 2.55, count: 2, width: 16, pass: 610 },
+      { speed: 3.05, count: 3, width: 15, pass: 580 },
+      { speed: 3.55, count: 3, width: 17, pass: 550 },
+      { speed: 4.35, count: 4, width: 18, pass: 520 },
     ];
 
     const state = {
