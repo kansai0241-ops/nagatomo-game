@@ -2,851 +2,599 @@
 <html lang="ja">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>無限サイドバックラン</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>バックパス危機一髪</title>
   <style>
     :root {
-      --ink: #15151a;
-      --muted: #5e6470;
-      --field: #198754;
-      --field-dark: #11633d;
-      --line: rgba(255, 255, 255, 0.74);
-      --accent: #e53935;
-      --gold: #f4c542;
-      --sky: #bfe8ff;
+      --ink: #13151a;
+      --muted: #59616f;
+      --line: rgba(255, 255, 255, 0.72);
+      --blue: #1c64d1;
+      --red: #e53935;
+      --yellow: #f4c542;
+      --green: #168754;
+      --grass: #17814d;
+      --grass-dark: #0f5f38;
     }
 
     * {
       box-sizing: border-box;
     }
 
+    html,
     body {
-      margin: 0;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(#9bd8ff 0%, #d8f3ff 56%, #eef8f2 56%, #d7efe0 100%);
-      color: var(--ink);
-      font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
-    }
-
-    .game-shell {
-      width: min(1120px, 100vw);
-      min-height: 100vh;
-      display: grid;
-      grid-template-rows: auto 1fr auto;
-      gap: 12px;
-      padding: 16px;
-    }
-
-    header {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 16px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(28px, 5vw, 52px);
-      line-height: 0.98;
-      letter-spacing: 0;
-    }
-
-    .subtitle {
-      margin: 6px 0 0;
-      color: var(--muted);
-      font-weight: 700;
-      font-size: 14px;
-    }
-
-    .hud {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(88px, 1fr));
-      gap: 8px;
-      width: min(520px, 100%);
-    }
-
-    .hud-item {
-      border: 2px solid rgba(21, 21, 26, 0.14);
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.76);
-      padding: 8px 10px;
-      box-shadow: 0 6px 0 rgba(21, 21, 26, 0.08);
-    }
-
-    .hud-label {
-      color: var(--muted);
-      font-size: 11px;
-      font-weight: 800;
-    }
-
-    .hud-value {
-      margin-top: 2px;
-      font-size: 24px;
-      font-weight: 900;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .game {
-      position: relative;
-      overflow: hidden;
-      min-height: 560px;
-      border: 4px solid #17212f;
-      border-radius: 8px;
-      background:
-        radial-gradient(circle at 18% 18%, rgba(255,255,255,0.92) 0 42px, transparent 43px),
-        linear-gradient(#8bd3ff 0 42%, transparent 42%),
-        repeating-linear-gradient(90deg, rgba(255,255,255,0.07) 0 80px, rgba(255,255,255,0.13) 80px 160px),
-        linear-gradient(var(--field) 0%, var(--field-dark) 100%);
-      box-shadow: 0 18px 34px rgba(25, 49, 65, 0.22);
-      user-select: none;
-      touch-action: manipulation;
-    }
-
-    .stand {
-      position: absolute;
-      left: 0;
-      right: 0;
-      top: 160px;
-      height: 118px;
-      background:
-        linear-gradient(90deg, rgba(255,255,255,0.86) 0 12px, transparent 12px 24px),
-        linear-gradient(#26364d, #1a2739);
-      opacity: 0.86;
-    }
-
-    .stand::before,
-    .stand::after {
-      content: "";
-      position: absolute;
-      inset: 20px 0 auto 0;
-      height: 10px;
-      background: repeating-linear-gradient(90deg, #e53935 0 28px, #ffffff 28px 56px, #1a64c8 56px 84px);
-    }
-
-    .pitch-lines {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 72px;
-      height: 280px;
-      background:
-        linear-gradient(var(--line), var(--line)) 0 74px / 100% 4px no-repeat,
-        linear-gradient(90deg, var(--line), var(--line)) 72% 0 / 4px 100% no-repeat;
-      opacity: 0.9;
-    }
-
-    .pitch-lines::before {
-      content: "";
-      position: absolute;
-      right: 7%;
-      bottom: 18px;
-      width: 210px;
-      height: 140px;
-      border: 4px solid var(--line);
-      border-right: 0;
-    }
-
-    .road {
-      position: absolute;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      height: 104px;
-      background:
-        repeating-linear-gradient(90deg, rgba(255,255,255,0.48) 0 70px, transparent 70px 152px),
-        linear-gradient(#3cb371, #22875a);
-      border-top: 4px solid rgba(255,255,255,0.7);
-    }
-
-    .player {
-      position: absolute;
-      left: 108px;
-      bottom: 88px;
-      width: 74px;
-      height: 108px;
-      transform-origin: 50% 100%;
-    }
-
-    .player.running {
-      animation: bob 0.34s infinite alternate ease-in-out;
-    }
-
-    .head {
-      position: absolute;
-      left: 22px;
-      top: 0;
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      background: #f2b887;
-      border: 3px solid #202025;
-    }
-
-    .hair {
-      position: absolute;
-      left: 19px;
-      top: -4px;
-      width: 38px;
-      height: 18px;
-      border-radius: 50% 50% 30% 30%;
-      background: #1e1f25;
-    }
-
-    .body {
-      position: absolute;
-      left: 16px;
-      top: 31px;
-      width: 44px;
-      height: 48px;
-      border-radius: 12px 12px 8px 8px;
-      background: linear-gradient(90deg, #1c64d1 0 50%, #ffffff 50% 56%, #1c64d1 56%);
-      border: 3px solid #202025;
-    }
-
-    .body::before {
-      content: "55";
-      position: absolute;
-      inset: 7px 0 auto;
-      color: #fff;
-      text-align: center;
-      font-size: 15px;
-      font-weight: 900;
-    }
-
-    .arm,
-    .leg {
-      position: absolute;
-      border-radius: 999px;
-      background: #202025;
-      transform-origin: 50% 0;
-    }
-
-    .arm.left { left: 8px; top: 42px; width: 10px; height: 42px; transform: rotate(34deg); }
-    .arm.right { left: 56px; top: 42px; width: 10px; height: 42px; transform: rotate(-38deg); }
-    .leg.left { left: 24px; top: 76px; width: 12px; height: 42px; transform: rotate(22deg); }
-    .leg.right { left: 42px; top: 76px; width: 12px; height: 42px; transform: rotate(-24deg); }
-
-    .player.running .arm.left,
-    .player.running .leg.right {
-      animation: limb-a 0.34s infinite alternate ease-in-out;
-    }
-
-    .player.running .arm.right,
-    .player.running .leg.left {
-      animation: limb-b 0.34s infinite alternate ease-in-out;
-    }
-
-    .player.sliding {
-      height: 70px;
-      transform: rotate(-10deg) translateY(18px);
-    }
-
-    .player.sliding .head { left: 40px; top: 4px; }
-    .player.sliding .hair { left: 38px; top: 0; }
-    .player.sliding .body { left: 4px; top: 28px; width: 62px; height: 32px; }
-    .player.sliding .arm.left,
-    .player.sliding .arm.right { top: 48px; height: 22px; transform: rotate(88deg); }
-    .player.sliding .leg.left,
-    .player.sliding .leg.right { top: 58px; height: 32px; transform: rotate(82deg); }
-
-    .obstacle,
-    .bonus,
-    .target,
-    .ball,
-    .message {
-      position: absolute;
-      will-change: transform;
-    }
-
-    .cone {
-      width: 44px;
-      height: 58px;
-      bottom: 92px;
-      background: linear-gradient(135deg, transparent 0 16%, #f26a21 17% 78%, transparent 79%);
-    }
-
-    .cone::before {
-      content: "";
-      position: absolute;
-      left: 9px;
-      right: 9px;
-      bottom: 16px;
-      height: 8px;
-      background: #fff;
-    }
-
-    .defender {
-      width: 58px;
-      height: 92px;
-      bottom: 92px;
-    }
-
-    .defender::before {
-      content: "";
-      position: absolute;
-      left: 15px;
-      top: 0;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: #d69a6f;
-      border: 3px solid #202025;
-    }
-
-    .defender::after {
-      content: "";
-      position: absolute;
-      left: 8px;
-      top: 28px;
-      width: 42px;
-      height: 54px;
-      border-radius: 10px;
-      background: #d7223b;
-      border: 3px solid #202025;
-      box-shadow: 10px 50px 0 -6px #202025, 25px 50px 0 -6px #202025;
-    }
-
-    .hurdle {
-      width: 72px;
-      height: 86px;
-      bottom: 92px;
-      border-left: 8px solid #f5f7fb;
-      border-right: 8px solid #f5f7fb;
-      border-top: 8px solid #e53935;
-    }
-
-    .bonus {
-      width: 38px;
-      height: 38px;
-      bottom: 190px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: var(--gold);
-      border: 3px solid #202025;
-      font-size: 20px;
-      font-weight: 900;
-      box-shadow: 0 0 0 5px rgba(244, 197, 66, 0.26);
-    }
-
-    .target {
-      right: 82px;
-      bottom: 210px;
-      width: 76px;
-      height: 76px;
-      border: 6px solid rgba(255, 255, 255, 0.9);
-      border-radius: 50%;
-      opacity: 0;
-      transform: scale(0.8);
-      transition: opacity 0.18s ease, transform 0.18s ease;
-    }
-
-    .target.active {
-      opacity: 1;
-      transform: scale(1);
-      animation: pulse 0.65s infinite alternate ease-in-out;
-    }
-
-    .target::before {
-      content: "";
-      position: absolute;
-      inset: 17px;
-      border-radius: 50%;
-      border: 5px solid #e53935;
-      background: rgba(255,255,255,0.4);
-    }
-
-    .ball {
-      left: 168px;
-      bottom: 106px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: radial-gradient(circle at 35% 30%, #fff 0 38%, #202025 39% 48%, #fff 49%);
-      border: 2px solid #202025;
-      opacity: 0;
-    }
-
-    .ball.crossing {
-      opacity: 1;
-      animation: cross 0.62s ease-out forwards;
-    }
-
-    .message {
-      left: 50%;
-      top: 42%;
-      min-width: min(430px, calc(100% - 40px));
-      transform: translate(-50%, -50%);
-      padding: 16px 22px;
-      border: 3px solid #17212f;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.92);
-      text-align: center;
-      font-weight: 900;
-      font-size: clamp(24px, 4.8vw, 48px);
-      box-shadow: 0 10px 0 rgba(23, 33, 47, 0.16);
-      pointer-events: none;
-    }
-
-    .message small {
-      display: block;
-      margin-top: 6px;
-      color: var(--muted);
-      font-size: 15px;
-      line-height: 1.4;
-    }
-
-    .stamina {
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      bottom: 18px;
-      height: 24px;
-      border: 3px solid #17212f;
-      border-radius: 999px;
-      background: rgba(255,255,255,0.5);
-      overflow: hidden;
-    }
-
-    .stamina-fill {
       width: 100%;
       height: 100%;
-      background: linear-gradient(90deg, #e53935, #f4c542, #22b573);
-      transform-origin: 0 50%;
-      transform: scaleX(1);
-    }
-
-    .controls {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 14px;
-      color: #243142;
-      font-weight: 800;
-      font-size: 14px;
-    }
-
-    .keys {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .action-buttons {
-      display: flex;
-      gap: 8px;
-    }
-
-    kbd {
-      min-width: 38px;
-      padding: 7px 10px;
-      border: 2px solid rgba(21, 21, 26, 0.16);
-      border-bottom-width: 4px;
-      border-radius: 7px;
-      background: #fff;
-      font: inherit;
-      text-align: center;
+      margin: 0;
+      overflow: hidden;
+      overscroll-behavior: none;
+      touch-action: manipulation;
+      color: var(--ink);
+      font-family: "Segoe UI", "Yu Gothic UI", "Meiryo", sans-serif;
+      background: #d9f2ff;
     }
 
     button {
       appearance: none;
-      border: 3px solid #17212f;
+      border: 3px solid #151923;
       border-radius: 8px;
       background: #fff;
-      padding: 10px 16px;
+      color: #151923;
       font: inherit;
       font-weight: 900;
-      color: #17212f;
-      box-shadow: 0 5px 0 rgba(23, 33, 47, 0.18);
       cursor: pointer;
+      box-shadow: 0 5px 0 rgba(21, 25, 35, 0.22);
+      -webkit-tap-highlight-color: transparent;
     }
 
     button:active {
       transform: translateY(3px);
-      box-shadow: 0 2px 0 rgba(23, 33, 47, 0.18);
+      box-shadow: 0 2px 0 rgba(21, 25, 35, 0.22);
     }
 
-    @keyframes bob {
-      from { transform: translateY(0); }
-      to { transform: translateY(-7px); }
+    .app {
+      width: 100vw;
+      height: 100dvh;
+      min-height: 540px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 8px;
+      padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+      background: linear-gradient(#bfe9ff 0 34%, #e6f7ff 34% 42%, #dff1e8 42% 100%);
     }
 
-    @keyframes limb-a {
-      from { transform: rotate(36deg); }
-      to { transform: rotate(-28deg); }
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 8px;
+      min-height: 62px;
     }
 
-    @keyframes limb-b {
-      from { transform: rotate(-36deg); }
-      to { transform: rotate(28deg); }
+    h1 {
+      margin: 0;
+      font-size: clamp(22px, 7vw, 42px);
+      line-height: 1;
+      letter-spacing: 0;
     }
 
-    @keyframes pulse {
-      from { box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.25); }
-      to { box-shadow: 0 0 0 16px rgba(229, 57, 53, 0); }
+    .subtitle {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: clamp(12px, 3.4vw, 15px);
+      font-weight: 800;
+      line-height: 1.2;
     }
 
-    @keyframes cross {
-      0% { transform: translate(0, 0) scale(1) rotate(0); }
-      65% { transform: translate(56vw, -170px) scale(0.86) rotate(520deg); }
-      100% { transform: translate(72vw, -110px) scale(0.65) rotate(780deg); opacity: 0; }
+    .scoreboard {
+      display: grid;
+      grid-template-columns: repeat(2, 68px);
+      gap: 6px;
     }
 
-    @media (max-width: 760px) {
-      .game-shell {
-        padding: 10px;
-        gap: 10px;
+    .scorebox {
+      min-height: 52px;
+      padding: 6px;
+      border: 2px solid rgba(19, 21, 26, 0.16);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.82);
+      box-shadow: 0 4px 0 rgba(19, 21, 26, 0.09);
+    }
+
+    .scorebox span {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 900;
+    }
+
+    .scorebox strong {
+      display: block;
+      margin-top: 1px;
+      font-size: 22px;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .stage {
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      border: 4px solid #151923;
+      border-radius: 8px;
+      background:
+        linear-gradient(var(--line), var(--line)) 0 50% / 100% 4px no-repeat,
+        linear-gradient(90deg, var(--line), var(--line)) 50% 0 / 4px 100% no-repeat,
+        radial-gradient(circle at 50% 50%, transparent 0 66px, var(--line) 67px 70px, transparent 71px),
+        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.06) 0 58px, rgba(255, 255, 255, 0.12) 58px 116px),
+        linear-gradient(145deg, var(--grass), var(--grass-dark));
+      box-shadow: 0 12px 22px rgba(19, 39, 49, 0.2);
+      user-select: none;
+    }
+
+    .goal {
+      position: absolute;
+      left: 4%;
+      top: 31%;
+      width: 54px;
+      height: 38%;
+      border: 4px solid rgba(255, 255, 255, 0.82);
+      border-left: 0;
+    }
+
+    .goal::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 38%;
+      width: 34px;
+      height: 24%;
+      border: 3px solid rgba(255, 255, 255, 0.7);
+      border-left: 0;
+    }
+
+    .player,
+    .teammate,
+    .keeper,
+    .opponent,
+    .ball {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      will-change: transform, left, top;
+    }
+
+    .player,
+    .teammate,
+    .keeper,
+    .opponent {
+      width: clamp(36px, 10vw, 58px);
+      height: clamp(46px, 13vw, 76px);
+    }
+
+    .player {
+      left: 31%;
+      top: 57%;
+    }
+
+    .teammate {
+      left: 70%;
+      top: 28%;
+    }
+
+    .keeper {
+      left: 13%;
+      top: 50%;
+    }
+
+    .opponent {
+      left: var(--press-x, 62%);
+      top: 57%;
+      transition: left 0.08s linear;
+    }
+
+    .kit {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 64%;
+      height: 64%;
+      transform: translate(-50%, -36%);
+      border: 3px solid #151923;
+      border-radius: 12px 12px 8px 8px;
+      background: linear-gradient(90deg, var(--blue) 0 48%, #fff 48% 55%, var(--blue) 55%);
+    }
+
+    .player .kit::after {
+      content: "55";
+      position: absolute;
+      inset: 9px 0 auto;
+      color: #fff;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .teammate .kit {
+      background: linear-gradient(90deg, #fff 0 46%, var(--blue) 46% 54%, #fff 54%);
+    }
+
+    .keeper .kit {
+      background: #f4c542;
+    }
+
+    .opponent .kit {
+      background: #d7223b;
+    }
+
+    .head {
+      position: absolute;
+      left: 50%;
+      top: 16%;
+      width: 40%;
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      border: 3px solid #151923;
+      border-radius: 50%;
+      background: #f0b884;
+    }
+
+    .opponent .head {
+      background: #d79a68;
+    }
+
+    .ball {
+      left: var(--ball-x, 38%);
+      top: var(--ball-y, 61%);
+      width: clamp(24px, 7vw, 38px);
+      aspect-ratio: 1;
+      border: 3px solid #151923;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 28%, #fff 0 38%, #151923 39% 48%, #fff 49%);
+      transition: left 0.24s ease, top 0.24s ease;
+      z-index: 5;
+    }
+
+    .lane {
+      position: absolute;
+      height: 8px;
+      border-radius: 999px;
+      opacity: 0.76;
+      transform-origin: 0 50%;
+      pointer-events: none;
+    }
+
+    .lane.forward {
+      left: 37%;
+      top: 54%;
+      width: 38%;
+      transform: rotate(-28deg);
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .lane.clear {
+      left: 36%;
+      top: 64%;
+      width: 34%;
+      transform: rotate(30deg);
+      background: rgba(244, 197, 66, 0.8);
+    }
+
+    .lane.back {
+      left: 16%;
+      top: 58%;
+      width: 28%;
+      background: rgba(229, 57, 53, 0.8);
+    }
+
+    .danger {
+      position: absolute;
+      left: 14px;
+      right: 14px;
+      top: 12px;
+      display: grid;
+      gap: 6px;
+      z-index: 8;
+    }
+
+    .danger-label {
+      display: flex;
+      justify-content: space-between;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 900;
+      text-shadow: 0 2px 0 rgba(0, 0, 0, 0.18);
+    }
+
+    .danger-track {
+      height: 16px;
+      overflow: hidden;
+      border: 3px solid #151923;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+    }
+
+    .danger-fill {
+      width: 100%;
+      height: 100%;
+      transform: scaleX(0);
+      transform-origin: 0 50%;
+      background: linear-gradient(90deg, #22b573, #f4c542, #e53935);
+    }
+
+    .callout {
+      position: absolute;
+      left: 50%;
+      top: 48%;
+      z-index: 10;
+      min-width: min(320px, calc(100% - 32px));
+      max-width: calc(100% - 32px);
+      padding: 12px 14px;
+      transform: translate(-50%, -50%);
+      border: 3px solid #151923;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.94);
+      text-align: center;
+      font-size: clamp(22px, 7vw, 42px);
+      font-weight: 900;
+      line-height: 1.05;
+      box-shadow: 0 8px 0 rgba(21, 25, 35, 0.18);
+      pointer-events: none;
+    }
+
+    .callout small {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: clamp(12px, 3.5vw, 15px);
+      line-height: 1.35;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      min-height: 78px;
+    }
+
+    .controls button {
+      min-height: 70px;
+      padding: 8px 4px;
+      font-size: clamp(15px, 4.5vw, 20px);
+      line-height: 1.15;
+    }
+
+    .controls small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .primary {
+      background: #e8f2ff;
+    }
+
+    .clear {
+      background: #fff6d7;
+    }
+
+    .risky {
+      background: #ffe7e4;
+    }
+
+    @media (max-height: 620px) {
+      .app {
+        gap: 6px;
+        padding-top: 6px;
+        padding-bottom: 6px;
+        min-height: 0;
       }
 
       header {
-        align-items: stretch;
-        flex-direction: column;
+        min-height: 54px;
       }
 
-      .hud {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        width: 100%;
+      .subtitle {
+        display: none;
       }
 
-      .game {
-        min-height: 520px;
+      .scorebox {
+        min-height: 46px;
+      }
+
+      .scorebox strong {
+        font-size: 19px;
       }
 
       .controls {
-        align-items: stretch;
-        flex-direction: column;
+        min-height: 64px;
       }
 
-      .action-buttons {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-      }
-
-      button {
-        width: 100%;
+      .controls button {
+        min-height: 58px;
       }
     }
   </style>
 </head>
 <body>
-  <main class="game-shell">
+  <main class="app">
     <header>
       <div>
-        <h1>無限サイドバックラン</h1>
-        <p class="subtitle">走って、避けて、クロスを上げる。スタミナ管理が勝負。</p>
+        <h1>バックパス危機一髪</h1>
+        <p class="subtitle">奪われる前に判断。前へ出すか、外へ逃がすか。</p>
       </div>
-      <div class="hud" aria-live="polite">
-        <div class="hud-item">
-          <div class="hud-label">SCORE</div>
-          <div class="hud-value" id="score">0</div>
+      <div class="scoreboard" aria-live="polite">
+        <div class="scorebox">
+          <span>SCORE</span>
+          <strong id="score">0</strong>
         </div>
-        <div class="hud-item">
-          <div class="hud-label">DISTANCE</div>
-          <div class="hud-value" id="distance">0m</div>
-        </div>
-        <div class="hud-item">
-          <div class="hud-label">CROSS</div>
-          <div class="hud-value" id="crosses">0</div>
-        </div>
-        <div class="hud-item">
-          <div class="hud-label">BEST</div>
-          <div class="hud-value" id="best">0</div>
+        <div class="scorebox">
+          <span>BEST</span>
+          <strong id="best">0</strong>
         </div>
       </div>
     </header>
 
-    <section class="game" id="game" aria-label="無限サイドバックラン ゲーム画面">
-      <div class="stand"></div>
-      <div class="pitch-lines"></div>
-      <div class="target" id="target"></div>
-      <div class="ball" id="ball"></div>
-      <div class="player running" id="player" aria-hidden="true">
-        <div class="hair"></div>
-        <div class="head"></div>
-        <div class="body"></div>
-        <div class="arm left"></div>
-        <div class="arm right"></div>
-        <div class="leg left"></div>
-        <div class="leg right"></div>
+    <section class="stage" id="stage" aria-label="バックパス危機一髪 ゲーム画面">
+      <div class="goal"></div>
+      <div class="danger">
+        <div class="danger-label">
+          <span>プレス接近</span>
+          <span id="round">1本目</span>
+        </div>
+        <div class="danger-track">
+          <div class="danger-fill" id="dangerFill"></div>
+        </div>
       </div>
-      <div class="road"></div>
-      <div class="stamina" aria-label="スタミナ">
-        <div class="stamina-fill" id="staminaFill"></div>
+
+      <div class="lane forward"></div>
+      <div class="lane clear"></div>
+      <div class="lane back"></div>
+
+      <div class="keeper" aria-hidden="true"><div class="head"></div><div class="kit"></div></div>
+      <div class="teammate" aria-hidden="true"><div class="head"></div><div class="kit"></div></div>
+      <div class="player" aria-hidden="true"><div class="head"></div><div class="kit"></div></div>
+      <div class="opponent" id="opponent" aria-hidden="true"><div class="head"></div><div class="kit"></div></div>
+      <div class="ball" id="ball" aria-hidden="true"></div>
+
+      <div class="callout" id="message">
+        ヒヤッと回避
+        <small>前へ出す / 外へクリアで開始。バックパスは危険。</small>
       </div>
-      <div class="message" id="message">SIDE BACK RUN<small>スペース / クリックで開始</small></div>
     </section>
 
-    <footer class="controls">
-      <div class="keys">
-        <kbd>Space</kbd><span>ジャンプ / 開始</span>
-        <kbd>↓</kbd><span>スライディング</span>
-        <kbd>C</kbd><span>クロス</span>
-      </div>
-      <div class="action-buttons" aria-label="操作ボタン">
-        <button id="jumpButton" type="button">ジャンプ</button>
-        <button id="slideButton" type="button">スライド</button>
-        <button id="crossButton" type="button">クロス</button>
-        <button id="restart" type="button">リスタート</button>
-      </div>
-    </footer>
+    <nav class="controls" aria-label="操作">
+      <button class="primary" id="forwardButton" type="button">前へ出す<small>高得点</small></button>
+      <button class="clear" id="clearButton" type="button">外へクリア<small>安全</small></button>
+      <button class="risky" id="backButton" type="button">バックパス<small>危険</small></button>
+    </nav>
   </main>
 
   <script>
-    const game = document.getElementById("game");
-    const player = document.getElementById("player");
-    const message = document.getElementById("message");
-    const target = document.getElementById("target");
+    const stage = document.getElementById("stage");
     const ball = document.getElementById("ball");
-    const staminaFill = document.getElementById("staminaFill");
+    const opponent = document.getElementById("opponent");
+    const message = document.getElementById("message");
+    const dangerFill = document.getElementById("dangerFill");
     const scoreEl = document.getElementById("score");
-    const distanceEl = document.getElementById("distance");
-    const crossesEl = document.getElementById("crosses");
     const bestEl = document.getElementById("best");
-    const jumpButton = document.getElementById("jumpButton");
-    const slideButton = document.getElementById("slideButton");
-    const crossButton = document.getElementById("crossButton");
-    const restartButton = document.getElementById("restart");
+    const roundEl = document.getElementById("round");
+    const forwardButton = document.getElementById("forwardButton");
+    const clearButton = document.getElementById("clearButton");
+    const backButton = document.getElementById("backButton");
 
     const state = {
       running: false,
       over: false,
       score: 0,
-      distance: 0,
-      crosses: 0,
-      best: Number(localStorage.getItem("sideBackRunBest") || 0),
-      stamina: 100,
-      speed: 330,
-      y: 0,
-      vy: 0,
-      slidingUntil: 0,
-      crossWindowUntil: 0,
-      crossCooldownUntil: 0,
+      round: 1,
+      pressure: 0,
       lastTime: 0,
-      obstacleTimer: 0,
-      bonusTimer: 1.6,
-      obstacles: [],
-      bonuses: [],
+      messageTimer: 0,
+      best: Number(localStorage.getItem("backPassBest") || 0),
     };
-
-    const groundBottom = 88;
-    const gravity = 2600;
 
     bestEl.textContent = state.best;
 
     function reset() {
-      for (const item of [...state.obstacles, ...state.bonuses]) {
-        item.el.remove();
-      }
-
       state.running = true;
       state.over = false;
       state.score = 0;
-      state.distance = 0;
-      state.crosses = 0;
-      state.stamina = 100;
-      state.speed = 330;
-      state.y = 0;
-      state.vy = 0;
-      state.slidingUntil = 0;
-      state.crossWindowUntil = 0;
-      state.crossCooldownUntil = 0;
+      state.round = 1;
+      state.pressure = 0;
       state.lastTime = performance.now();
-      state.obstacleTimer = 0.8;
-      state.bonusTimer = 2.2;
-      state.obstacles = [];
-      state.bonuses = [];
-      player.className = "player running";
-      player.style.bottom = groundBottom + "px";
-      target.classList.remove("active");
+      setBall("38%", "61%");
       message.hidden = true;
       updateHud();
       requestAnimationFrame(tick);
     }
 
+    function setBall(x, y) {
+      ball.style.setProperty("--ball-x", x);
+      ball.style.setProperty("--ball-y", y);
+    }
+
     function updateHud() {
-      scoreEl.textContent = Math.floor(state.score);
-      distanceEl.textContent = Math.floor(state.distance) + "m";
-      crossesEl.textContent = state.crosses;
-      staminaFill.style.transform = `scaleX(${Math.max(0, state.stamina) / 100})`;
+      scoreEl.textContent = state.score;
+      bestEl.textContent = state.best;
+      roundEl.textContent = `${state.round}本目`;
+      dangerFill.style.transform = `scaleX(${Math.min(1, state.pressure)})`;
+      const pressX = 62 - state.pressure * 22;
+      opponent.style.setProperty("--press-x", `${pressX}%`);
     }
 
-    function jump() {
-      if (!state.running) {
-        reset();
-        return;
-      }
-      if (state.y <= 2 && state.stamina >= 7) {
-        state.vy = 860;
-        state.stamina -= 7;
-        player.classList.remove("sliding");
-      }
-    }
-
-    function slide() {
-      if (!state.running || state.y > 4 || state.stamina < 5) return;
-      state.slidingUntil = performance.now() + 520;
-      state.stamina -= 5;
-      player.classList.add("sliding");
-    }
-
-    function cross() {
-      const now = performance.now();
-      if (!state.running || now < state.crossCooldownUntil || state.stamina < 12) return;
-
-      state.crossCooldownUntil = now + 820;
-      state.stamina -= 12;
-      ball.classList.remove("crossing");
-      void ball.offsetWidth;
-      ball.classList.add("crossing");
-
-      if (now < state.crossWindowUntil) {
-        state.crosses += 1;
-        state.score += 450 + Math.min(850, state.speed);
-        state.crossWindowUntil = 0;
-        flashMessage("ブラボー！", 430);
-      } else {
-        state.score += 60;
-        flashMessage("クロス！", 300);
-      }
-    }
-
-    function flashMessage(text, duration) {
-      message.innerHTML = text;
+    function flash(text, detail, duration = 620) {
+      message.innerHTML = `${text}<small>${detail}</small>`;
       message.hidden = false;
-      clearTimeout(flashMessage.timer);
-      flashMessage.timer = setTimeout(() => {
+      clearTimeout(state.messageTimer);
+      state.messageTimer = setTimeout(() => {
         if (state.running) message.hidden = true;
       }, duration);
     }
 
-    function spawnObstacle() {
-      const types = ["cone", "defender", "hurdle"];
-      const type = types[Math.floor(Math.random() * types.length)];
-      const el = document.createElement("div");
-      el.className = `obstacle ${type}`;
-      game.appendChild(el);
-
-      const item = {
-        el,
-        type,
-        x: game.clientWidth + 80,
-        w: type === "hurdle" ? 72 : type === "defender" ? 58 : 44,
-        h: type === "hurdle" ? 86 : type === "defender" ? 92 : 58,
-        low: type !== "hurdle",
-      };
-      state.obstacles.push(item);
+    function nextRound(points, text, detail, ballX, ballY) {
+      state.score += points;
+      state.round += 1;
+      state.pressure = Math.max(0, state.pressure * 0.18);
+      setBall(ballX, ballY);
+      flash(text, detail);
+      setTimeout(() => {
+        if (!state.running) return;
+        setBall("38%", "61%");
+      }, 260);
+      updateHud();
     }
 
-    function spawnBonus() {
-      const el = document.createElement("div");
-      el.className = "bonus";
-      el.textContent = "+";
-      game.appendChild(el);
-      state.bonuses.push({
-        el,
-        x: game.clientWidth + 80,
-        w: 38,
-        h: 38,
-      });
+    function choose(action) {
+      if (!state.running) {
+        reset();
+        return;
+      }
+
+      const panic = state.pressure > 0.72;
+      const tight = state.pressure > 0.52;
+
+      if (action === "forward") {
+        const bonus = panic ? 180 : tight ? 130 : 90;
+        nextRound(bonus, "ナイス判断", "前へつけてプレス脱出", "72%", "29%");
+        return;
+      }
+
+      if (action === "clear") {
+        nextRound(65, "まず安全", "外へ逃がしてヒヤッと回避", "78%", "78%");
+        return;
+      }
+
+      if (panic || tight) {
+        endGame("奪われた！", "バックパスを読まれてヒヤッ。画面タップで再挑戦");
+        setBall("27%", "55%");
+        return;
+      }
+
+      nextRound(25, "ギリセーフ", "余裕がある時だけバックパス成功", "14%", "50%");
     }
 
-    function playerRect() {
-      const sliding = performance.now() < state.slidingUntil;
-      return {
-        x: 116,
-        y: groundBottom + state.y,
-        w: sliding ? 70 : 54,
-        h: sliding ? 48 : 98,
-      };
-    }
-
-    function overlaps(a, b) {
-      return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-    }
-
-    function endGame() {
+    function endGame(text, detail) {
       state.running = false;
       state.over = true;
-      player.classList.remove("running");
       if (state.score > state.best) {
-        state.best = Math.floor(state.score);
-        localStorage.setItem("sideBackRunBest", String(state.best));
-        bestEl.textContent = state.best;
+        state.best = state.score;
+        localStorage.setItem("backPassBest", String(state.best));
       }
-      message.innerHTML = `試合終了<small>スコア ${Math.floor(state.score)} / Spaceで再挑戦</small>`;
+      updateHud();
+      message.innerHTML = `${text}<small>スコア ${state.score} / ${detail}</small>`;
       message.hidden = false;
     }
 
     function tick(now) {
       if (!state.running) return;
-      const dt = Math.min(0.032, (now - state.lastTime) / 1000);
+      const dt = Math.min(0.04, (now - state.lastTime) / 1000);
       state.lastTime = now;
+      state.pressure += dt * (0.22 + state.round * 0.018);
 
-      state.speed += dt * 8;
-      state.distance += dt * state.speed * 0.035;
-      state.score += dt * 18;
-      state.stamina = Math.min(100, state.stamina + dt * 6);
-
-      state.vy -= gravity * dt;
-      state.y = Math.max(0, state.y + state.vy * dt);
-      if (state.y === 0 && state.vy < 0) state.vy = 0;
-      player.style.bottom = (groundBottom + state.y) + "px";
-
-      if (now > state.slidingUntil) {
-        player.classList.remove("sliding");
-      }
-
-      state.obstacleTimer -= dt;
-      state.bonusTimer -= dt;
-      if (state.obstacleTimer <= 0) {
-        spawnObstacle();
-        state.obstacleTimer = Math.max(0.72, 1.45 - state.speed / 900) + Math.random() * 0.65;
-      }
-      if (state.bonusTimer <= 0) {
-        spawnBonus();
-        state.bonusTimer = 4.2 + Math.random() * 3.4;
-      }
-
-      const pRect = playerRect();
-      for (let i = state.obstacles.length - 1; i >= 0; i--) {
-        const item = state.obstacles[i];
-        item.x -= state.speed * dt;
-        item.el.style.transform = `translateX(${item.x}px)`;
-        const rect = { x: item.x, y: groundBottom, w: item.w, h: item.h };
-        if (overlaps(pRect, rect)) {
-          endGame();
-          return;
-        }
-        if (item.x + item.w < 0) {
-          state.obstacles.splice(i, 1);
-          item.el.remove();
-          state.score += 120;
-          state.crossWindowUntil = now + 1150;
-        }
-      }
-
-      for (let i = state.bonuses.length - 1; i >= 0; i--) {
-        const item = state.bonuses[i];
-        item.x -= state.speed * dt;
-        item.el.style.transform = `translateX(${item.x}px)`;
-        const rect = { x: item.x, y: 190, w: item.w, h: item.h };
-        if (overlaps(pRect, rect)) {
-          state.bonuses.splice(i, 1);
-          item.el.remove();
-          state.stamina = Math.min(100, state.stamina + 30);
-          state.score += 180;
-          flashMessage("体幹UP", 360);
-        } else if (item.x + item.w < 0) {
-          state.bonuses.splice(i, 1);
-          item.el.remove();
-        }
-      }
-
-      target.classList.toggle("active", now < state.crossWindowUntil);
-      if (state.stamina <= 0) {
-        endGame();
+      if (state.pressure >= 1) {
+        endGame("判断遅れ！", "奪われる前に前へ出すか外へクリア");
         return;
       }
 
@@ -854,26 +602,22 @@
       requestAnimationFrame(tick);
     }
 
-    window.addEventListener("keydown", (event) => {
-      if (event.code === "Space" || event.code === "ArrowUp") {
-        event.preventDefault();
-        jump();
-      }
-      if (event.code === "ArrowDown") {
-        event.preventDefault();
-        slide();
-      }
-      if (event.code === "KeyC") {
-        event.preventDefault();
-        cross();
-      }
+    forwardButton.addEventListener("click", () => choose("forward"));
+    clearButton.addEventListener("click", () => choose("clear"));
+    backButton.addEventListener("click", () => choose("back"));
+    stage.addEventListener("pointerdown", () => {
+      if (!state.running) reset();
     });
 
-    game.addEventListener("pointerdown", () => jump());
-    jumpButton.addEventListener("click", jump);
-    slideButton.addEventListener("click", slide);
-    crossButton.addEventListener("click", cross);
-    restartButton.addEventListener("click", reset);
+    window.addEventListener("keydown", (event) => {
+      if (event.code === "ArrowUp" || event.code === "KeyF") choose("forward");
+      if (event.code === "ArrowRight" || event.code === "KeyC") choose("clear");
+      if (event.code === "ArrowLeft" || event.code === "KeyB") choose("back");
+      if (event.code === "Space") {
+        event.preventDefault();
+        if (!state.running) reset();
+      }
+    });
 
     updateHud();
   </script>

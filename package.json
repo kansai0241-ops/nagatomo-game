@@ -1,8 +1,8 @@
 {
-  "name": "nagatomo-side-back-run",
+  "name": "nagatomo-back-pass-panic",
   "version": "1.0.0",
   "private": true,
-  "description": "A simple browser game inspired by Nagatomo's endless side-back run.",
+  "description": "A simple mobile browser game about escaping a risky back pass under pressure.",
   "scripts": {
     "start": "node server.js"
   }
