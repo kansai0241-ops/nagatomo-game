@@ -430,7 +430,7 @@
 
       <div class="callout" id="message">
         パスを通せ
-        <small>相手が真ん中からズレた瞬間にパス。レベル10まで。</small>
+        <small>相手とボールが重ならないタイミングで通せ。レベル5まで。</small>
       </div>
     </section>
 
@@ -453,16 +453,11 @@
     const resetButton = document.getElementById("resetButton");
 
     const levels = [
-      { speed: 0.55, count: 1, width: 13, pass: 520 },
-      { speed: 0.72, count: 1, width: 15, pass: 500 },
-      { speed: 0.9, count: 1, width: 17, pass: 480 },
-      { speed: 1.08, count: 2, width: 15, pass: 465 },
-      { speed: 1.28, count: 2, width: 17, pass: 450 },
-      { speed: 1.48, count: 2, width: 19, pass: 435 },
-      { speed: 1.72, count: 3, width: 17, pass: 420 },
-      { speed: 2.02, count: 3, width: 19, pass: 400 },
-      { speed: 2.38, count: 3, width: 21, pass: 380 },
-      { speed: 5.8, count: 4, width: 30, pass: 330 },
+      { speed: 1.45, count: 1, width: 12, pass: 620 },
+      { speed: 1.9, count: 2, width: 12, pass: 590 },
+      { speed: 2.35, count: 2, width: 13, pass: 560 },
+      { speed: 2.9, count: 3, width: 13, pass: 530 },
+      { speed: 3.8, count: 3, width: 14, pass: 500 },
     ];
 
     const state = {
@@ -472,6 +467,8 @@
       cleared: false,
       lastTime: 0,
       time: 0,
+      passStart: 0,
+      passDuration: 0,
       best: Number(localStorage.getItem("backPassStageBest") || 0),
       opponents: [],
     };
@@ -528,7 +525,7 @@
       bestText.textContent = state.best;
       levelName.textContent = `LEVEL ${state.level}`;
       speedText.textContent = `相手 ${cfg.count}人 / 速度 ${Math.round(cfg.speed * 10)}`;
-      meterFill.style.transform = `scaleX(${state.level / 10})`;
+      meterFill.style.transform = `scaleX(${state.level / levels.length})`;
     }
 
     function flash(text, detail, duration = 640) {
@@ -564,21 +561,14 @@
       if (state.passing) return;
 
       state.passing = true;
+      state.passStart = performance.now();
+      state.passDuration = cfg.pass;
       ball.className = "ball passing";
+      ball.style.transitionDuration = `${cfg.pass}ms`;
       ball.style.left = "50%";
       ball.style.top = "88%";
-
-      const cfg = levels[state.level - 1];
-      const caughtBy = state.opponents.find((opponent) => Math.abs(opponent.x - 50) < cfg.width);
       setTimeout(() => {
-        if (caughtBy) {
-          ball.className = "ball caught";
-          ball.style.left = `${caughtBy.x}%`;
-          ball.style.top = `${caughtBy.y}%`;
-          gameOver();
-          return;
-        }
-        clearLevel();
+        if (state.running && state.passing) clearLevel();
       }, cfg.pass);
     }
 
@@ -588,11 +578,12 @@
         localStorage.setItem("backPassStageBest", String(state.best));
       }
 
-      if (state.level === 10) {
+      if (state.level === levels.length) {
         state.running = false;
+        state.passing = false;
         state.cleared = true;
         updateHud();
-        message.innerHTML = "完全クリア！<small>レベル10の1%を通した。これはブラボー。</small>";
+        message.innerHTML = "完全クリア！<small>最後まで通した。これはブラボー。</small>";
         message.hidden = false;
         return;
       }
@@ -618,7 +609,31 @@
       state.lastTime = now;
       state.time += dt;
       updateOpponents();
+
+      if (state.passing) {
+        const caughtBy = getCollision();
+        if (caughtBy) {
+          ball.className = "ball caught";
+          ball.style.left = `${caughtBy.x}%`;
+          ball.style.top = `${caughtBy.y}%`;
+          gameOver();
+          return;
+        }
+      }
+
       requestAnimationFrame(tick);
+    }
+
+    function getCollision() {
+      const cfg = levels[state.level - 1];
+      const elapsed = performance.now() - state.passStart;
+      const progress = Math.min(1, Math.max(0, elapsed / state.passDuration));
+      const ballY = 22 + (88 - 22) * progress;
+      return state.opponents.find((opponent) => {
+        const sameLane = Math.abs(opponent.x - 50) < cfg.width;
+        const sameHeight = Math.abs(opponent.y - ballY) < 5.5;
+        return sameLane && sameHeight;
+      });
     }
 
     passButton.addEventListener("click", pass);
