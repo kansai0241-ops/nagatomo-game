@@ -469,6 +469,8 @@
       time: 0,
       passStart: 0,
       passDuration: 0,
+      passFrom: 22,
+      passTo: 88,
       best: Number(localStorage.getItem("backPassStageBest") || 0),
       opponents: [],
     };
@@ -556,7 +558,7 @@
       if (state.cleared) return;
       if (!state.running) {
         startGame();
-        setTimeout(pass, 120);
+        setTimeout(pass, 80);
         return;
       }
       if (state.passing) return;
@@ -565,16 +567,15 @@
       state.passing = true;
       state.passStart = performance.now();
       state.passDuration = cfg.pass;
+      state.passFrom = 22;
+      state.passTo = 88;
       ball.className = "ball passing";
-      ball.style.transitionDuration = `${cfg.pass}ms`;
       ball.style.left = "50%";
-      ball.style.top = "88%";
-      setTimeout(() => {
-        if (state.running && state.passing) clearLevel();
-      }, cfg.pass);
+      ball.style.top = `${state.passFrom}%`;
     }
 
     function clearLevel() {
+      state.passing = false;
       if (state.level > state.best) {
         state.best = state.level;
         localStorage.setItem("backPassStageBest", String(state.best));
@@ -582,7 +583,6 @@
 
       if (state.level === levels.length) {
         state.running = false;
-        state.passing = false;
         state.cleared = true;
         updateHud();
         message.innerHTML = "完全クリア！<small>最後まで通した。これはブラボー。</small>";
@@ -613,6 +613,11 @@
       updateOpponents();
 
       if (state.passing) {
+        updatePass(now);
+        if (!state.passing) {
+          if (state.running) requestAnimationFrame(tick);
+          return;
+        }
         const caughtBy = getCollision();
         if (caughtBy) {
           ball.className = "ball caught";
@@ -626,11 +631,23 @@
       requestAnimationFrame(tick);
     }
 
+    function updatePass(now) {
+      const progress = getPassProgress(now);
+      const ballY = state.passFrom + (state.passTo - state.passFrom) * progress;
+      ball.style.top = `${ballY}%`;
+      if (progress >= 1) clearLevel();
+    }
+
+    function getPassProgress(now = performance.now()) {
+      if (!state.passDuration) return 0;
+      const elapsed = now - state.passStart;
+      return Math.min(1, Math.max(0, elapsed / state.passDuration));
+    }
+
     function getCollision() {
       const cfg = levels[state.level - 1];
-      const elapsed = performance.now() - state.passStart;
-      const progress = Math.min(1, Math.max(0, elapsed / state.passDuration));
-      const ballY = 22 + (88 - 22) * progress;
+      const progress = getPassProgress();
+      const ballY = state.passFrom + (state.passTo - state.passFrom) * progress;
       return state.opponents.find((opponent) => {
         const sameLane = Math.abs(opponent.x - 50) < cfg.width;
         const sameHeight = Math.abs(opponent.y - ballY) < 5.5;
@@ -650,6 +667,7 @@
     updateHud();
     createOpponents();
     updateOpponents();
+    startLevel();
   </script>
 </body>
 </html>
